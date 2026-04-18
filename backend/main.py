@@ -33,8 +33,8 @@ from pricing import calculate_cost
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
 
 # Create all tables on startup (idempotent)
 Base.metadata.create_all(bind=engine)
@@ -76,22 +76,22 @@ async def chat_completions(request: Request, db: Session = Depends(get_db)):
     Measures latency, extracts token usage, calculates cost, and persists a log
     entry before forwarding the response back to the caller.
     """
-    if not OPENAI_API_KEY:
+    if not GEMINI_API_KEY:
         raise HTTPException(
             status_code=500,
-            detail="OPENAI_API_KEY is not configured on the server.",
+            detail="GEMINI_API_KEY is not configured on the server.",
         )
 
     body: dict[str, Any] = await request.json()
-    model_name: str = body.get("model", "gpt-4o-mini")
+    model_name: str = body.get("model", "gemini-2.0-flash")
 
     # Forward request headers (strip host to avoid proxy conflicts)
     forward_headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
         "Content-Type": "application/json",
     }
 
-    target_url = f"{OPENAI_BASE_URL}/chat/completions"
+    target_url = f"{GEMINI_BASE_URL}/chat/completions"
 
     # ── Interceptor: measure wall-clock latency ──────────────────────────────
     start_ts = time.perf_counter()
@@ -105,15 +105,25 @@ async def chat_completions(request: Request, db: Session = Depends(get_db)):
 
     # ── Parse upstream payload ────────────────────────────────────────────────
     try:
-        payload: dict[str, Any] = upstream_response.json()
+        payload = upstream_response.json()
     except Exception:
-        # If OpenAI returned a non-JSON body, pass it straight through
+        # Non-JSON body — forward as-is
         return JSONResponse(
             status_code=upstream_response.status_code,
             content={"error": upstream_response.text},
         )
 
-    usage = payload.get("usage", {})
+    # Gemini error responses are JSON *arrays* ([{"error": {...}}]), not objects.
+    # If we received a non-2xx status or a list payload, forward it cleanly
+    # without attempting to parse usage — this prevents the AttributeError crash.
+    if not upstream_response.is_success or not isinstance(payload, dict):
+        content = payload if isinstance(payload, (dict, list)) else {"error": str(payload)}
+        return JSONResponse(
+            status_code=upstream_response.status_code,
+            content=content,
+        )
+
+    usage: dict[str, Any] = payload.get("usage", {})
     prompt_tokens: int = usage.get("prompt_tokens", 0)
     completion_tokens: int = usage.get("completion_tokens", 0)
     total_tokens: int = usage.get("total_tokens", prompt_tokens + completion_tokens)
