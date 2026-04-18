@@ -1,0 +1,17 @@
+services:
+  # ─── FastAPI Backend ──────────────────────────────────────────────────────
+  - type: web
+    name: aether-ai-hub-api
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false          # Set manually in the Render dashboard
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+    autoDeploy: true
+    healthCheckPath: /health
