@@ -13,7 +13,7 @@ client = OpenAI(
 print("Sending request to Aether AI Hub...")
 
 response = client.chat.completions.create(
-    model="gemini-2.0-flash",  # Active free-tier model (1.5 returns 404 on this key)
+    model="gpt-4o-mini",  # GitHub Model (gpt-4o, gpt-4o-mini, etc.)
     messages=[
         {"role": "system", "content": "You are a helpful AI assistant."},
         {"role": "user", "content": "Write a haiku about writing code."}

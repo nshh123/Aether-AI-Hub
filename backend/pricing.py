@@ -11,21 +11,16 @@ from __future__ import annotations
 # Pricing table: model_id → (input_cost_per_1k, output_cost_per_1k)  [USD]
 # ---------------------------------------------------------------------------
 MODEL_PRICING: dict[str, tuple[float, float]] = {
-    # Gemini 2.5 family (newest, free via AI Studio)
-    "gemini-2.5-flash": (0.0, 0.0),
-    "gemini-2.5-pro": (0.0, 0.0),
-    # Gemini 2.0 family
-    "gemini-2.0-flash": (0.0, 0.0),
-    "gemini-2.0-flash-001": (0.0, 0.0),
-    "gemini-2.0-flash-lite": (0.0, 0.0),
-    "gemini-2.0-flash-lite-001": (0.0, 0.0),
-    # Gemini 1.5 family (legacy, may not be available on all keys)
-    "gemini-1.5-flash": (0.0, 0.0),
-    "gemini-1.5-flash-8b": (0.0, 0.0),
-    "gemini-1.5-pro": (0.0, 0.0),
-    # Default fallback — free tier regardless of unknown model
+    # GitHub Models — Free Tier
+    "gpt-4o": (0.0, 0.0),
+    "gpt-4o-mini": (0.0, 0.0),
+    "Meta-Llama-3-8B-Instruct": (0.0, 0.0),
+    "Meta-Llama-3.1-405B-Instruct": (0.0, 0.0),
+    "Phi-3-mini-4k-instruct": (0.0, 0.0),
+    # Default fallback — free tier for GitHub Models
     "_default": (0.0, 0.0),
 }
+
 
 
 

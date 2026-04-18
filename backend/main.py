@@ -33,8 +33,8 @@ from pricing import calculate_cost
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+GITHUB_BASE_URL = os.getenv("GITHUB_BASE_URL", "https://models.inference.ai.azure.com")
 
 # Create all tables on startup (idempotent)
 Base.metadata.create_all(bind=engine)
@@ -76,22 +76,22 @@ async def chat_completions(request: Request, db: Session = Depends(get_db)):
     Measures latency, extracts token usage, calculates cost, and persists a log
     entry before forwarding the response back to the caller.
     """
-    if not GEMINI_API_KEY:
+    if not GITHUB_TOKEN:
         raise HTTPException(
             status_code=500,
-            detail="GEMINI_API_KEY is not configured on the server.",
+            detail="GITHUB_TOKEN is not configured on the server.",
         )
 
     body: dict[str, Any] = await request.json()
-    model_name: str = body.get("model", "gemini-2.0-flash")
+    model_name: str = body.get("model", "gpt-4o-mini")
 
     # Forward request headers (strip host to avoid proxy conflicts)
     forward_headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Content-Type": "application/json",
     }
 
-    target_url = f"{GEMINI_BASE_URL}/chat/completions"
+    target_url = f"{GITHUB_BASE_URL}/chat/completions"
 
     # ── Interceptor: measure wall-clock latency ──────────────────────────────
     start_ts = time.perf_counter()
@@ -113,9 +113,8 @@ async def chat_completions(request: Request, db: Session = Depends(get_db)):
             content={"error": upstream_response.text},
         )
 
-    # Gemini error responses are JSON *arrays* ([{"error": {...}}]), not objects.
-    # If we received a non-2xx status or a list payload, forward it cleanly
-    # without attempting to parse usage — this prevents the AttributeError crash.
+    # GitHub Models typically returns standard OpenAI-formatted errors (objects).
+    # We keep the check for isinstance(payload, dict) for safety.
     if not upstream_response.is_success or not isinstance(payload, dict):
         content = payload if isinstance(payload, (dict, list)) else {"error": str(payload)}
         return JSONResponse(
