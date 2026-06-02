@@ -172,7 +172,7 @@ Aether AI Hub/
 │   ├── vite.config.js       # Vite server proxy configurations
 │   └── index.html           # Main SPA entry point
 ├── render.yaml              # Render IAC deployment definition
-└── LICENSE                  # MIT License
+└── LICENSE                  # GNU GPLv3 License
 ```
 
 ---
@@ -193,4 +193,4 @@ Deploy the frontend static build to **Vercel** or **Netlify**:
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more details.
+Distributed under the GNU General Public License v3.0 (GPL-3.0). See `LICENSE` for more details.
